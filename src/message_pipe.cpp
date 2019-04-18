@@ -2,7 +2,7 @@
 
 namespace ubinder {
 
-void MessagePipe::push(std::vector<uint8_t>&& message) {
+void MessagePipe::push(Message&& message) {
     {
         std::lock_guard<std::mutex> lock(_lock);
         _queue.emplace(message);
@@ -10,7 +10,7 @@ void MessagePipe::push(std::vector<uint8_t>&& message) {
     _cv.notify_all();
 }
 
-std::vector<uint8_t> MessagePipe::get() {
+Message MessagePipe::get() {
     std::unique_lock<std::mutex> lock(_lock);
     _cv.wait(lock, [this] { return _queue.size();});
     auto message = std::move(_queue.front());
