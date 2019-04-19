@@ -5,7 +5,7 @@ All other thing is done for you by ubinder.
 
 ## Why not gRPC/nng or any other messaging library with inProc support?
 
-Good question, glad you ask. Main reason - too many features, so bigger API, that may it harder to add support for new language/platform for binding.
+Good question, glad you ask. Main reason - too many features, bigger API, that makes it harder to add support for new language/platform for binding.
 UBinder has very limited number (4) of functions to reimplement in order to support new target.
 
 ## Feedback
