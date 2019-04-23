@@ -1,0 +1,17 @@
+message AddValueRequest {
+  required string key = 1;
+  required string value = 2;
+}
+
+message AddValueResponse {
+  optional string error = 1;
+}
+
+message GetValueRequest {
+  required string key = 1;
+}
+
+message GetValueResponse {
+  required string key = 1;
+  optional string error = 2;
+}

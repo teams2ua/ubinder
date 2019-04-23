@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 
-#include "key_value_store.h"
+#include ".h"
 
 int main() {
     key_value_store::Storage x;

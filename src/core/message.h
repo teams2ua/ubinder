@@ -7,7 +7,8 @@ namespace ubinder {
 enum MESSAGE_TYPE {
     NOTIFICATION,
     REQUEST,
-    RESPONSE
+    RESPONSE,
+    EXIT
 };
 
 struct Message {
