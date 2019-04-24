@@ -4,9 +4,9 @@
 extern "C" {
 #endif
 
-typeded void (*Callback)(char* data, uint32_t dataSize); 
+typedef void (*Callback)(char* data, size_t dataSize); 
 
-typeded void (*Request)(char* data, uint32_t dataSize, Callback callback); 
+typedef void (*Request)(char* data, size_t dataSize, Callback callback);
 
 #ifdef __cplusplus
 }
