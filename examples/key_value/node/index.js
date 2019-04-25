@@ -10,13 +10,12 @@ function OnNotification(notification) {
 }
 
 function addValue(key, value) {
-    var addValueRequest = new messages.AddValueRequest()
-    addValueRequest.setKey(key)
-    addValueRequest.setValue(value)
-    var req = new messages.Request()
-    req.setRequestType(messages.Request.ADD_VALUE)
-    req.setRequestBody(addValueRequest.serializeBinary())
-    ubinder.sendRequest(req.serializeBinary(), )
+    var addVal = new messages.AddValueRequest();
+    addVal.setKey(key);
+    addVal.setValue(value);
+    var req = new messages.Request();
+    req.setRequestType(messages.RequestType.ADD_VALUE);
+    req.setRequestBody(messages.RequestType.ADD_VALUE);
 }
 
 function getValue(key) {
@@ -27,4 +26,3 @@ function getValue(key) {
 }
 
 ubinder.init(OnRequest, OnNotification);
-
