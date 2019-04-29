@@ -2,7 +2,7 @@
 
 namespace ubinder {
 
-void MessagePipe::push(Message&& message) {
+void MessagePipe::push(const Message&& message) {
     {
         std::lock_guard<std::mutex> lock(_lock);
         _queue.emplace(message);

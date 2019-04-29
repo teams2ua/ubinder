@@ -10,7 +10,7 @@ namespace ubinder {
 
 class MessagePipe {
 public:
-    void push(Message&& message);
+    void push(const Message&& message);
     Message get();
 private:
     std::queue<Message> _queue;

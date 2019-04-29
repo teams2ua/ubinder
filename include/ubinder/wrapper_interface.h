@@ -1,17 +1,28 @@
 #pragma once
-#include "ubinder/function_types.h"
+#include "function_types.h"
 
-// This is the interface wrapper should provide,
-// ubinder will call initLibrary and pass two his function sendRequest and sendNotificaiton
-// that should be used by library to send information to other side,
-// library should return two its own function that should be called on request and 
-// on notification.
+// This file is counterpart of ubinder/wrapper_interface.h
+// the usages of this two files are known beforehand, and interface should be stable
+// so I decide to not bother with conditioning dllimport/dllexport
+
+#ifdef WIN32
+#  ifdef BUILDING_WRAPPER
+        /* We are building this library */
+#    define WRAPPER_EXPORT __declspec(dllexport)
+#  else
+        /* We are using this library */
+#    define WRAPPER_EXPORT __declspec(dllimport)
+#  endif
+#else
+#  define WRAPPER_EXPORT
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-__declspec(dllexport) void initWrapper(Request sendRequest, Callback sendNotification, Request* onRequest, Callback* onNotification);
+WRAPPER_EXPORT void initWrapper(Request sendRequest, Callback sendNotification, Request* onRequest, Callback* onNotification);
     
 #ifdef __cplusplus
 }

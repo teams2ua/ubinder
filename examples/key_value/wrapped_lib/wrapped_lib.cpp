@@ -34,7 +34,7 @@ std::string OnGetValue(const GetValueRequest& req) {
     return resp.SerializeAsString();
 }
 
-void OnRequest(char* data, size_t dataSize, Callback callback) {
+void OnRequest(const char* data, size_t dataSize, Callback callback) {
     key_value_protoc::Request req;
     if (!req.ParseFromArray(data, dataSize)) {
         throw std::runtime_error("Can't parse incoming messsage");
@@ -54,10 +54,18 @@ void OnRequest(char* data, size_t dataSize, Callback callback) {
         default:
             throw std::runtime_error("Unknown message type");
         };
-    }).recover();
+    }).recover([callback](const stlab::future<std::string>& x) {
+        try {
+            const std::string value = *x.get_try();
+            callback(value.data(), value.size());
+        }
+        catch (const std::exception& ex) {
+            std::cout << "some error" << std::endl;
+        }
+        });
 }
 
-void OnNotification(char* data, size_t dataSize) {
+void OnNotification(const char* data, size_t dataSize) {
 
 }
 
