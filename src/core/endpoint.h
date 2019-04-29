@@ -19,7 +19,6 @@ typedef std::function<Message()> GetFunction;
 class Endpoint {
 public:
     Endpoint(PushFunction pushFunction, GetFunction getFunction, OnRequest onRequest, Callback onNotification);
-    Endpoint(Endpoint&&) = default;
     void SendNotification(std::vector<uint8_t>&& notificationData);
     void SendRequest(std::vector<uint8_t>&& requestData, Callback callback);
     ~Endpoint();

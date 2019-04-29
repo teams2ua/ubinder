@@ -3,6 +3,8 @@
   {
     'target_name': '<(target_module_name)',
     'sources': [ "node_binding.cpp",
+                 "loops_tasks_queue.cpp",
+                 "loops_tasks_queue.h",
                  "../core/channel.cpp",
                  "../core/channel.h", 
                  "../core/endpoint.cpp",

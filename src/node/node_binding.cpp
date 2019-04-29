@@ -21,13 +21,13 @@ namespace ubinder {
     void NodeBinding::SendRequest(std::vector<uint8_t>&& reqData, Callback onResponse) {
         // callback will be called from different thread, so we need to push a task on event loop
         auto& queue = _tasksToQueue;
-        server->SendRequest(std::forward(reqData), [onResponse, &queue] (std::vector<uint8_t>&& data){
-            queue.PushTask([d{ std::move(data) }, onResponse]() { onResponse(std::forward(d)); });
+        server->SendRequest(std::move(reqData), [onResponse, &queue] (std::vector<uint8_t>&& data){
+            queue.PushTask([d{ std::move(data) }, onResponse]() mutable { onResponse(std::move(d)); });
         });
     }
 
     void NodeBinding::SendNotification(std::vector<uint8_t>&& reqData) {
-        server->SendNotification(std::forward(reqData));
+        server->SendNotification(std::forward<std::vector<uint8_t>>(reqData));
     }
 };
 
@@ -53,7 +53,7 @@ NAN_METHOD(sendRequest) {
     Nan::TypedArrayContents<uint8_t> buff(info[0]);
     std::vector<uint8_t> cpp(*buff, *buff + buff.length());
     auto callback = std::make_shared<Nan::Callback>(info[1].As<v8::Function>());
-    std::function<void(const std::vector<uint8_t>&&)> lmb([callback](const std::vector<uint8_t>&& data){
+    ubinder::Callback lmb([callback](std::vector<uint8_t>&& data){
         Nan::HandleScope scope;
         v8::Local<v8::Value> argv[] = { Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked() };
         callback->Call(1, argv);
@@ -66,6 +66,37 @@ NAN_METHOD(sendNotification) {
     std::vector<uint8_t> cpp(*buff, *buff + buff.length());
     nodeBinding->SendNotification(std::move(cpp));
 }
+
+NAN_METHOD(responseCallback) {
+    info.GetReturnValue().Set(Nan::New("hello world").ToLocalChecked());
+}
+
+void CreateFunction(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+    
+
+    // omit this to make it anonymous
+    fn->SetName(Nan::New("theFunction").ToLocalChecked());
+
+    info.GetReturnValue().Set(fn);
+}
+
+NAN_METHOD(registerLib) {
+    auto onRequest = std::make_shared<Nan::Callback>(info[0].As<v8::Function>());
+    auto onNotification = std::make_shared<Nan::Callback>(info[1].As<v8::Function>());
+    ubinder::OnRequest lmbRequest([onRequest](std::vector<uint8_t> && data, Callback onResponse) {
+        Nan::HandleScope scope;
+        v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(responseCallback);
+        v8::Local<v8::Function> fn = tpl->GetFunction();
+        v8::Local<v8::Value> argv[] = {
+            Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked(),
+            fn
+        };
+        onRequest->Call(2, argv);
+        });
+    nodeBinding->RegisterServer(std::move(lmbRequest), std::move(lmb));
+}
+
+
 
 
 

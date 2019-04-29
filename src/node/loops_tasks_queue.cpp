@@ -15,7 +15,7 @@ namespace ubinder {
         uv_async_init(loop, &_async, call_on_loop);
     }
 
-    void static QueuedTasks::call_on_loop(uv_async_t* handle) {
+    void QueuedTasks::call_on_loop(uv_async_t* handle) {
         QueuedTasks* self = (QueuedTasks*)handle->data;
         self->CallOnLoop();
     }
