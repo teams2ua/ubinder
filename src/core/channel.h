@@ -4,11 +4,7 @@
 
 namespace ubinder {
 
-class Channel {
-public:
-    std::unique_ptr<Endpoint> createServer(OnRequest onRequest, Callback onResponse);
-    std::unique_ptr<Endpoint> createClient(OnRequest onRequest, Callback onResponse);
-private:
+struct Channel {
     MessagePipe _serverToClient;
     MessagePipe _clientToServer;
 };

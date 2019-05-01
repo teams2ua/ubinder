@@ -13,7 +13,7 @@ void MessagePipe::push(const Message&& message) {
 Message MessagePipe::get() {
     std::unique_lock<std::mutex> lock(_lock);
     _cv.wait(lock, [this] { return _queue.size();});
-    auto message = std::move(_queue.front());
+    Message message(std::move(_queue.front()));
     _queue.pop();
     lock.unlock();
     return message;

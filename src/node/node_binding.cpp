@@ -9,25 +9,35 @@
 #include <nan_typedarray_contents.h>
 #include <uv.h>
 
-#include "ubinder/wrapper_interface.h"
 #include "loops_tasks_queue.h"
 
 namespace ubinder {
 
     NodeBinding::NodeBinding(uv_loop_t* loop)
         : _tasksToQueue(loop) {
+        initWrapper(&onRequestForWrapper, &onNotificationForWrapper, &_clientOnRequest, &_clientOnNotification);
+
+        _client = _channel.createClient(
+            [this](std::vector<uint8_t>&& requestData, Callback callback) {
+                _clientOnRequest(this, (char*)requestData.data(), requestData.size(), );
+            },
+            );
     }
 
-    void NodeBinding::SendRequest(std::vector<uint8_t>&& reqData, Callback onResponse) {
+    void NodeBinding::SendRequest(std::vector<uint8_t>&& reqData, Callback&& onResponse) {
         // callback will be called from different thread, so we need to push a task on event loop
         auto& queue = _tasksToQueue;
-        server->SendRequest(std::move(reqData), [onResponse, &queue] (std::vector<uint8_t>&& data){
-            queue.PushTask([d{ std::move(data) }, onResponse]() mutable { onResponse(std::move(d)); });
-        });
+        _server->SendRequest(std::move(reqData), std::move([onResp{std::move(onResponse)}, &queue](std::vector<uint8_t>&& data){
+            queue.PushTask([d{ std::move(data) }, onResponse{std::move(onResp)}]() mutable { onResponse(std::move(d)); });
+        }));
     }
 
     void NodeBinding::SendNotification(std::vector<uint8_t>&& reqData) {
-        server->SendNotification(std::forward<std::vector<uint8_t>>(reqData));
+        _server->SendNotification(std::forward<std::vector<uint8_t>>(reqData));
+    }
+
+    void NodeBinding::RegisterServer(OnRequest&& onRequest, Callback&& onNotification) {
+        _server = _channel.createServer(onRequest, onNotification);
     }
 };
 
@@ -63,27 +73,15 @@ NAN_METHOD(sendRequest) {
 
 NAN_METHOD(sendNotification) {
     Nan::TypedArrayContents<uint8_t> buff(info[0]);
-    std::vector<uint8_t> cpp(*buff, *buff + buff.length());
-    nodeBinding->SendNotification(std::move(cpp));
-}
-
-NAN_METHOD(responseCallback) {
-    info.GetReturnValue().Set(Nan::New("hello world").ToLocalChecked());
-}
-
-void CreateFunction(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-    
-
-    // omit this to make it anonymous
-    fn->SetName(Nan::New("theFunction").ToLocalChecked());
-
-    info.GetReturnValue().Set(fn);
+    std::vector<uint8_t> data(*buff, *buff + buff.length());
+    nodeBinding->SendNotification(std::move(data));
 }
 
 NAN_METHOD(registerLib) {
     auto onRequest = std::make_shared<Nan::Callback>(info[0].As<v8::Function>());
     auto onNotification = std::make_shared<Nan::Callback>(info[1].As<v8::Function>());
     ubinder::OnRequest lmbRequest([onRequest](std::vector<uint8_t> && data, Callback onResponse) {
+        /* TODO implement me
         Nan::HandleScope scope;
         v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(responseCallback);
         v8::Local<v8::Function> fn = tpl->GetFunction();
@@ -92,13 +90,12 @@ NAN_METHOD(registerLib) {
             fn
         };
         onRequest->Call(2, argv);
+        /**/
         });
-    nodeBinding->RegisterServer(std::move(lmbRequest), std::move(lmb));
+    ubinder::OnRequest lmbNotification([onRequest](std::vector<uint8_t>&& data) {
+        });
+    nodeBinding->RegisterServer(std::move(lmbRequest), std::move(lmbNotification));
 }
-
-
-
-
 
 NAN_MODULE_INIT(Init) {
     nodeBinding = std::make_unique<ubinder::NodeBinding>(uv_default_loop());
@@ -106,6 +103,7 @@ NAN_MODULE_INIT(Init) {
     NAN_EXPORT(target, getLength);
     NAN_EXPORT(target, thereAndBack);
     NAN_EXPORT(target, sendRequest);
+    NAN_EXPORT(target, sendNotification);
 }
 
 NODE_MODULE(hello, Init)

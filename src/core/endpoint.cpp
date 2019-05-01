@@ -3,35 +3,29 @@
 namespace ubinder {
 
 Endpoint::Endpoint(
-    PushFunction pushFunction,
-    GetFunction getFunction,
-    OnRequest onRequest,
-    Callback onNotification)
-    : _pushFunction(pushFunction)
-    , _getFunction(getFunction)
-    , _onRequest(onRequest)
-    , _onNotification(onNotification) {
+    PushFunction&& pushFunction,
+    GetFunction&& getFunction,
+    RequestResponse&& onRequest,
+    RequestResponse&& onResponse,
+    Callback&& onNotification)
+    : _pushFunction(std::move(pushFunction))
+    , _getFunction(std::move(getFunction))
+    , _onRequest(std::move(onRequest))
+    , _onResponse(std::move(onResponse))
+    , _onNotification(std::move(onNotification)) {
     std::swap(_loopThread, std::thread([this]() {this->loop(); }));
 }
 
 void Endpoint::SendNotification(std::vector<uint8_t>&& notificationData) {
-    Message messageToSend;
-    messageToSend.type = NOTIFICATION;
-    messageToSend.data = notificationData;
-    messageToSend.req_id = -1;
-    _pushFunction(std::move(messageToSend));
+    _pushFunction(std::move(Message{ std::move(notificationData), nullptr, NOTIFICATION }));
 }
 
-void Endpoint::SendRequest(std::vector<uint8_t>&& requestData, Callback callback) {
-    Message messageToSend;
-    messageToSend.type = REQUEST;
-    messageToSend.data = requestData;
-    messageToSend.req_id = _nextReqId.fetch_add(1);
-    {
-        std::lock_guard<std::mutex> guard(_pendingRequestsGuard);
-        _pendingRequests[messageToSend.req_id] = callback;
-    }
-    _pushFunction(std::move(messageToSend));
+void Endpoint::SendRequest(void *request, std::vector<uint8_t>&& requestData) {
+    _pushFunction(std::move(Message{ std::move(requestData), request, REQUEST }));
+}
+
+void Endpoint::SendResponse(void* request, std::vector<uint8_t>&& responseData) {
+    _pushFunction(std::move(Message{ std::move(responseData), request, RESPONSE }));
 }
 
 void Endpoint::loop() {
@@ -44,30 +38,15 @@ void Endpoint::loop() {
                 _onNotification(std::move(msg.data));
                 break;
             case REQUEST: {
-                uint64_t req_id = msg.req_id;
-                _onRequest(std::move(msg.data), [&](std::vector<uint8_t>&& data) {
-                    Message messageToSend;
-                    messageToSend.type = RESPONSE;
-                    messageToSend.data = data;
-                    messageToSend.req_id = req_id;
-                    _pushFunction(std::move(messageToSend));
-                });
+                _onRequest(msg.request, std::move(msg.data));
                 break;
             }
             case RESPONSE: {
-                Callback onResponse;
-                {
-                    std::lock_guard<std::mutex> guard(_pendingRequestsGuard);
-                    auto it = _pendingRequests.find(msg.req_id);
-                    if (it != _pendingRequests.end())
-                        break;
-                    std::swap(onResponse, it->second);
-                    _pendingRequests.erase(msg.req_id);
-                }
-                onResponse(std::move(msg.data));
+                _onResponse(msg.request, std::move(msg.data));
                 break;
             }
-                
+            default:
+                return;
         }
     }
 }

@@ -5,7 +5,6 @@ project(ubinder)
 add_library(ubinder STATIC)
 target_sources(ubinder PRIVATE
     ${CMAKE_SOURCE_DIR}/src/core/channel.h
-    ${CMAKE_SOURCE_DIR}/src/core/channel.cpp
     ${CMAKE_SOURCE_DIR}/src/core/endpoint.h
     ${CMAKE_SOURCE_DIR}/src/core/endpoint.cpp
     ${CMAKE_SOURCE_DIR}/src/core/message.h

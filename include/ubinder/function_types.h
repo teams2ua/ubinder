@@ -4,9 +4,10 @@
 extern "C" {
 #endif
 
-typedef void (*Callback)(const char* data, size_t dataSize); 
+typedef void (*Notification)(const char* data, size_t dataSize);
 
-typedef void (*Request)(const char* data, size_t dataSize, Callback callback);
+// request should be the same that was passed in request
+typedef void (*RequestResponse)(const void* request, const char* data, size_t dataSize);
 
 #ifdef __cplusplus
 }
