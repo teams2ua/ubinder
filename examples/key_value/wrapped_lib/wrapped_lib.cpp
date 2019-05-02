@@ -5,69 +5,10 @@
 #include "stlab/concurrency/future.hpp"
 #include "ubinder/wrapper_interface.h"
 #include "ubinder/function_types.h"
+#include "ubinder/cpp_wrapper.hpp"
+
 #include "key_value_store.h"
 #include "messages.pb.h"
-
-class KeyValueStorageLib;
-
-template<typename WrapperClass>
-class CppWrapper {
-public:
-    typedef std::function<void(std::vector<uint8_t>&&)> Callback;
-    typedef std::function<void(std::vector<uint8_t>&&, Callback&&)> OnRequest;
-public:
-    void SendRequest(std::vector<uint8_t>&& data, Callback&& callback) {
-        sendRequest(new Callback(std::move(callback)), (const char*)data.data(), data.size());
-    }
-
-    void SendNotification(std::vector<uint8_t>&& data) {
-        sendNotification((const char*)data.data(), data.size());
-    }
-
-    //We receive incoming request
-    void onRequest(const void* request, const char* data, size_t dataSize) {
-        // we take the ownership of the data, so we copy
-        std::vector<uint8_t> incomingData(data, data + dataSize);
-        wrapper.OnRequest(std::move(incomingData), [request, this](std::vector<uint8_t>&& responseData) {
-            this->onResponse(request, (const char*)responseData.data(), responseData.size());
-            });
-    }
-
-    //We receive answer for request that we sent in the past
-    void onResponse(const void* request, const char* data, size_t dataSize) {
-        const Callback* callback = reinterpret_cast<const Callback*>(request);
-        std::vector<uint8_t> incomingData(data, data + dataSize);
-        (*callback)(std::move(incomingData));
-        delete callback;
-    }
-
-    //We receive notification
-    void onNotification(const char* data, size_t dataSize) {
-        std::vector<uint8_t> incomingData(data, data + dataSize);
-        wrapper.OnNotification(std::move(incomingData));
-    }
-protected:
-    WrapperClass wrapper;
-public:
-    //functions to call
-    ::Request sendRequest;
-    ::Response sendResponse;
-    ::Notification sendNotification;
-};
-
-static CppWrapper<KeyValueStorageLib> CppWrapperInstance;
-
-void OnRequestFunc(const void* request, const char* data, size_t dataSize) {
-    CppWrapperInstance.onRequest(request, data, dataSize);
-}
-
-void OnResponseFunc(const void* request, const char* data, size_t dataSize) {
-    CppWrapperInstance.onResponse(request, data, dataSize);
-}
-
-void OnNotificationFunc(const char* data, size_t dataSize) {
-    CppWrapperInstance.onNotification(data, dataSize);
-}
 
 using namespace key_value_protoc;
 
@@ -131,19 +72,34 @@ public:
 };
 
 
+static ubinder::CppWrapper<KeyValueStorageLib> CppWrapperInstance;
+
+void OnRequestFunc(const void* request, const char* data, size_t dataSize) {
+    CppWrapperInstance.onRequest(request, data, dataSize);
+}
+
+void OnResponseFunc(const void* request, const char* data, size_t dataSize) {
+    CppWrapperInstance.onResponse(request, data, dataSize);
+}
+
+void OnNotificationFunc(const char* data, size_t dataSize) {
+    CppWrapperInstance.onNotification(data, dataSize);
+}
+
+
 extern "C" {
     void initWrapper(
-        ::Request sendRequest,
-        ::Response sendResponse,
+        ::RequestResponse sendRequest,
+        ::RequestResponse sendResponse,
         ::Notification sendNotification,
-        ::Request* onRequest,
-        ::Response* onResponse,
+        ::RequestResponse* onRequest,
+        ::RequestResponse* onResponse,
         ::Notification* onNotification) {
         CppWrapperInstance.sendRequest = sendRequest;
         CppWrapperInstance.sendResponse = sendResponse;
         CppWrapperInstance.sendNotification = sendNotification;
-        *onRequest = OnRequestFunc;
-        *onResponse = OnResponseFunc;
-        *onNotification = OnNotificationFunc;
+        *onRequest = &OnRequestFunc;
+        *onResponse = &OnResponseFunc;
+        *onNotification = &OnNotificationFunc;
     }
 }

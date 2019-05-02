@@ -2,6 +2,7 @@
   "targets": [
   {
     'target_name': '<(target_module_name)',
+    'defines': ["BUILDING_BINDING"],
     'sources': [ "node_binding.cpp",
                  "loops_tasks_queue.cpp",
                  "loops_tasks_queue.h",

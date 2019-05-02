@@ -1,13 +1,13 @@
 #pragma once
-#include "function_types.h"
+#include "ubinder/function_types.h"
 
 #ifdef WIN32
-#  ifdef BUILDING_WRAPPER
-        /* We are building this library */
-#    define WRAPPER_EXPORT __declspec(dllexport)
-#  else
-        /* We are using this library */
+#  ifdef BUILDING_BINDING
+        /* We are building binding that import functions from wrapper */
 #    define WRAPPER_EXPORT __declspec(dllimport)
+#  else
+        /* We are not builind wrapper, so probably we are building wrapper */
+#    define WRAPPER_EXPORT __declspec(dllexport)
 #  endif
 #else
 #  define WRAPPER_EXPORT
@@ -19,11 +19,11 @@ extern "C" {
 #endif
 
 WRAPPER_EXPORT void initWrapper(
-    Request sendRequest,
-    Response sendResponse,
+    RequestResponse sendRequest,
+    RequestResponse sendResponse,
     Notification sendNotification,
-    Request* onRequest,
-    Response* onResponse,
+    RequestResponse* onRequest,
+    RequestResponse* onResponse,
     Notification* onNotification);
     
 #ifdef __cplusplus
