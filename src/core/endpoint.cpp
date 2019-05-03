@@ -20,11 +20,11 @@ void Endpoint::SendNotification(std::vector<uint8_t>&& notificationData) {
     _pushFunction(std::move(Message{ std::move(notificationData), nullptr, NOTIFICATION }));
 }
 
-void Endpoint::SendRequest(void *request, std::vector<uint8_t>&& requestData) {
+void Endpoint::SendRequest(const void *request, std::vector<uint8_t>&& requestData) {
     _pushFunction(std::move(Message{ std::move(requestData), request, REQUEST }));
 }
 
-void Endpoint::SendResponse(void* request, std::vector<uint8_t>&& responseData) {
+void Endpoint::SendResponse(const void* request, std::vector<uint8_t>&& responseData) {
     _pushFunction(std::move(Message{ std::move(responseData), request, RESPONSE }));
 }
 

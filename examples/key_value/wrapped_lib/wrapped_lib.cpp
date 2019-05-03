@@ -2,6 +2,7 @@
 #include <functional>
 
 #include "stlab/concurrency/default_executor.hpp"
+#include "stlab/concurrency/immediate_executor.hpp"
 #include "stlab/concurrency/future.hpp"
 #include "ubinder/wrapper_interface.h"
 #include "ubinder/function_types.h"
@@ -37,7 +38,8 @@ public:
     }
 
     void OnRequest(std::vector<uint8_t>&& data, std::function<void(std::vector<uint8_t>&&)> && callback) {
-        stlab::async(stlab::default_executor, [this, buffer{ std::move(data) }, cb(callback)]{
+        auto fut = stlab::async(stlab::immediate_executor, [this, buffer{ std::move(data) }, cb(callback)]{
+            std::cout << "ON REQUEST" << std::endl;
             key_value_protoc::Request req;
             if (!req.ParseFromArray(buffer.data(), buffer.size())) {
                 throw std::runtime_error("Can't parse incoming messsage");
@@ -66,6 +68,11 @@ public:
                     std::cout << "some error" << std::endl;
                 }
                 });
+        std::cout << fut.valid() << std::endl;
+    }
+
+    void OnNotification(std::vector<uint8_t>&& data) {
+        std::cout << "some notification" << std::endl;
     }
 public:
     key_value_store::Storage storage;
