@@ -13,7 +13,7 @@ Ubinder implement two types of protocol:
 * Request-Response
 * Notification
 
-To create a binding for all supported hosts you need to wrap you library and expose function from [include/ubinder/wrapper_interface.h](https://github.com/teams2ua/ubinder/blob/master/include/ubinder/wrapper_interface.h)
+To create a wrapper create a library and expose function from [include/ubinder/wrapper_interface.h](https://github.com/teams2ua/ubinder/blob/master/include/ubinder/wrapper_interface.h)
 
 ``` C
 // [in] sendRequest - function that wrapper could call to send request to host, response will be received with call onResponse
