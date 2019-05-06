@@ -13,7 +13,6 @@ Endpoint::Endpoint(
     , _onRequest(std::move(onRequest))
     , _onResponse(std::move(onResponse))
     , _onNotification(std::move(onNotification)) {
-    std::swap(_loopThread, std::thread([this]() {this->loop(); }));
 }
 
 void Endpoint::SendNotification(std::vector<uint8_t>&& notificationData) {
@@ -26,6 +25,10 @@ void Endpoint::SendRequest(const void *request, std::vector<uint8_t>&& requestDa
 
 void Endpoint::SendResponse(const void* request, std::vector<uint8_t>&& responseData) {
     _pushFunction(std::move(Message{ std::move(responseData), request, RESPONSE }));
+}
+
+void Endpoint::StartListen() {
+    _loopThread = std::make_unique<std::thread>(([this]() {this->loop(); }));
 }
 
 void Endpoint::loop() {
@@ -52,7 +55,7 @@ void Endpoint::loop() {
 }
 
 Endpoint::~Endpoint() {
-    _loopThread.join();
+    _loopThread->join();
 }
 
 }

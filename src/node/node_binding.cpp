@@ -52,10 +52,11 @@ namespace ubinder {
     }
 
     void NodeBinding::RegisterServer(std::function<void(std::vector<uint8_t>&&, Callback&&)> && onRequest, Callback&& onNotification) {
+        if (_server) return;
         _server = std::make_unique<Endpoint>(
             [this](Message&& msg) {this->_channel._serverToClient.push(std::move(msg)); },
             [this]() {return this->_channel._clientToServer.get(); },
-            [this, onReq{std::move(onRequest)}](const void* request, std::vector<uint8_t>&& data) {
+            [this, onReq{ std::move(onRequest) }](const void* request, std::vector<uint8_t>&& data) {
                 onReq(std::move(data), [this, request](std::vector<uint8_t>&& buffer) {
                     this->_server->SendResponse(request, std::move(buffer));
                     });
@@ -68,6 +69,12 @@ namespace ubinder {
             [onNotif{std::move(onNotification)}](std::vector<uint8_t>&& data) {
                 onNotif(std::move(data));
             });
+    }
+    /////////////////////////////
+
+    void NodeBinding::StartListen() {
+        _client->StartListen();
+        _server->StartListen();
     }
 
     NodeBinding NodeBinding::nodeBinding;
@@ -146,6 +153,7 @@ NAN_METHOD(registerLib) {
             onNotification->Call(1, argv);
         }
     );
+    ubinder::NodeBinding::nodeBinding.StartListen();
 }
 
 NAN_MODULE_INIT(Init) {

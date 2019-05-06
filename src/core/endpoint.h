@@ -21,6 +21,7 @@ public:
     void SendRequest(const void* request, std::vector<uint8_t>&& requestData);
     // request - same value as 
     void SendResponse(const void* request, std::vector<uint8_t>&& responseData);
+    void StartListen();
     ~Endpoint();
 private:
     void loop();
@@ -30,7 +31,7 @@ private:
     RequestResponse _onRequest;
     RequestResponse _onResponse;
     Callback _onNotification;
-    std::thread _loopThread;
+    std::unique_ptr<std::thread> _loopThread;
 };
 
 }

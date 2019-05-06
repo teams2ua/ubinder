@@ -22,7 +22,7 @@ public:
         // we take the ownership of the data, so we copy
         std::vector<uint8_t> incomingData(data, data + dataSize);
         wrapper.OnRequest(std::move(incomingData), [request, this](std::vector<uint8_t>&& responseData) {
-            this->onResponse(request, (const char*)responseData.data(), responseData.size());
+            sendResponse(request, (const char*)responseData.data(), responseData.size());
             });
     }
 

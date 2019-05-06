@@ -27,6 +27,8 @@ public:
 
     void RegisterServer(std::function<void(std::vector<uint8_t>&&, Callback&&)>&& onRequest, Callback&& onNotification);
 
+    void StartListen();
+
     static ubinder::NodeBinding nodeBinding;
 private:
     Channel _channel;

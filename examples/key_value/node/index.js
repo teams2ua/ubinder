@@ -9,7 +9,11 @@ function OnNotification(notification) {
     
 }
 
-addValue = function(key, value) {
+register = function () {
+    key_store_node.registerLib(OnRequest, OnNotification);
+}
+
+createAddValue = function(key, value) {
     var addVal = new messages.AddValueRequest();
     addVal.setKey(key);
     addVal.setValue(value);
@@ -18,21 +22,56 @@ addValue = function(key, value) {
     req.setRequestBody(addVal.serializeBinary());
     return req;
 }
-/*
-function getValue(key) {
-    return new Promise((resolve, reject)=> {
-        
-        ubinder.sendRequest()
-    })
-}
-  */
-register = function () {
-    key_store_node.registerLib(OnRequest, OnNotification);
+
+createGetValue = function (key) {
+    var getVal = new messages.GetValueRequest();
+    getVal.setKey(key);
+    var req = new messages.Request();
+    req.setRequestType(messages.RequestType.GET_VALUE);
+    req.setRequestBody(getVal.serializeBinary());
+    return req;
 }
 
-sendAddValue = function() {
-    key_store_node.registerLib(OnRequest, OnNotification);
-    var msg = addValue("key", "value").serializeBinary()
-    key_store_node.sendRequest(msg, function(data){console.log("incoming Data");console.log(data);});
+sendAddValue = function(key, value) {
+    return new Promise((resolve, reject) => {
+        var msg = createAddValue(key, value).serializeBinary()
+        key_store_node.sendRequest(msg, 
+            function(data){
+                var resp = messages.AddValueResponse.deserializeBinary(data);
+                if (resp.getError()=='') {
+                    resolve();
+                }else {
+                    reject(new Error(resp.getError()));
+                }
+            });        
+        });
+}
 
+sendGetValue = function(key) {
+    return new Promise((resolve, reject) => {
+        var msg = createGetValue(key).serializeBinary()
+        key_store_node.sendRequest(msg, 
+            function(data){
+                var resp = messages.GetValueResponse.deserializeBinary(data);
+                if (resp.getError()=='') {
+                    resolve(resp.getValue());
+                }else {
+                    reject(new Error(resp.getError()));
+                }
+            });
+    });
+}
+
+
+run_test = function() {
+    register();
+    sendAddValue("key1", "value1")
+        .then(() => sendGetValue("key1"))
+        .then((val) => console.log(val));
+    sendAddValue("key2", "value2")
+        .then(() => sendGetValue("key2"))
+        .then((val) => console.log(val));
+    sendAddValue("key3", "value3")
+        .then(() => sendGetValue("key3"))
+        .then((val) => console.log(val));
 }

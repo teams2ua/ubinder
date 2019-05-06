@@ -36,10 +36,9 @@ public:
         }
         return resp.SerializeAsString();
     }
-
+                                                             
     void OnRequest(std::vector<uint8_t>&& data, std::function<void(std::vector<uint8_t>&&)> && callback) {
-        auto fut = stlab::async(stlab::immediate_executor, [this, buffer{ std::move(data) }, cb(callback)]{
-            std::cout << "ON REQUEST" << std::endl;
+        stlab::async(stlab::default_executor, [this, buffer{ std::move(data) }, cb(callback)]{
             key_value_protoc::Request req;
             if (!req.ParseFromArray(buffer.data(), buffer.size())) {
                 throw std::runtime_error("Can't parse incoming messsage");
@@ -67,8 +66,7 @@ public:
                 catch (const std::exception& ex) {
                     std::cout << "some error" << std::endl;
                 }
-                });
-        std::cout << fut.valid() << std::endl;
+                }).detach();
     }
 
     void OnNotification(std::vector<uint8_t>&& data) {
