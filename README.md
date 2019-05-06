@@ -26,9 +26,9 @@ WRAPPER_EXPORT void initWrapper(
     Notification* onNotification);
 ```
 
-C++ implementation is provided inside include/cpp_wrapper.hpp
+C++ implementation is provided inside `include/cpp_wrapper.hpp`
 
-After you have build wrapper library, follow instruction inside src/{platform} for building binding for specific host. (ex. src/node include instruction how to build node.js binding)
+After you have build wrapper library, follow instruction inside `src/{platform}` for building binding for specific host. (ex. `src/node` include instruction how to build Node.js binding)
 
 ## Building
 

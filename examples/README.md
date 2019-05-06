@@ -1,1 +1,1 @@
-*key_value - simple library that simulate key-value store, each call to it takes 1s
+* key_value - simple library that simulate key-value store, each call to it takes 1s
