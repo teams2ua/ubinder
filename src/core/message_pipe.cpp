@@ -5,7 +5,7 @@ namespace ubinder {
 void MessagePipe::push(const Message&& message) {
     {
         std::lock_guard<std::mutex> lock(_lock);
-        _queue.emplace(message);
+        _queue.emplace(std::move(message));
     }
     _cv.notify_all();
 }
