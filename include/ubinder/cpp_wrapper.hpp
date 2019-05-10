@@ -39,6 +39,10 @@ public:
         std::vector<uint8_t> incomingData(data, data + dataSize);
         wrapper.OnNotification(std::move(incomingData));
     }
+
+    void initWrapper() {
+        wrapper.Init();
+    }
 protected:
     WrapperClass wrapper;
 public:
