@@ -121,7 +121,7 @@ NAN_METHOD(sendNotification) {
 void OnResponseInNode(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     Nan::TypedArrayContents<uint8_t> buff(info[0]);
     std::vector<uint8_t> data(*buff, *buff + buff.length());
-    Nan::TypedArrayContents<uint8_t> pointerData(info.Callee()->GetInternalField(0));
+    Nan::TypedArrayContents<uint8_t> pointerData(info[1]);
     uint64_t pointer;
     memcpy(&pointer, *pointerData, 8);
     ubinder::Callback* cb = reinterpret_cast<ubinder::Callback*>(pointer);
@@ -129,24 +129,33 @@ void OnResponseInNode(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     delete cb;
 }
 
+
+std::function<void()> CreateOnRequestFunction(std::shared_ptr<Nan::Callback> jsOnRequest, std::vector<uint8_t>&& data, ubinder::Callback&& callback) {
+    return
+        [jsOnRequest, data{ std::move(data) }, callback{ std::move(callback) }]() {
+            Nan::HandleScope scope;
+            v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(OnResponseInNode);
+            auto onResponseInNode = tpl->GetFunction();
+            auto cb = new ubinder::Callback(std::move(callback));
+            std::vector<uint8_t> serializedPointer(8);
+            memcpy(&serializedPointer[0], &cb, 8);
+            v8::Local<v8::Value> argv[] = {
+                Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked(),
+                onResponseInNode,
+                Nan::CopyBuffer((char*)serializedPointer.data(), serializedPointer.size()).ToLocalChecked()
+            };
+            jsOnRequest->Call(3, argv);
+        };
+}
+
 NAN_METHOD(registerLib) {
     auto onRequest = std::make_shared<Nan::Callback>(info[0].As<v8::Function>());
     auto onNotification = std::make_shared<Nan::Callback>(info[1].As<v8::Function>());
     ubinder::NodeBinding::nodeBinding.RegisterServer(
-        [onRequest](std::vector<uint8_t>&&data, ubinder::Callback&& callback) {
-            Nan::HandleScope scope;
-            v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(OnResponseInNode);
-            v8::Local<v8::Function> onResponseInNode = tpl->GetFunction();
-            auto cb = new ubinder::Callback(std::move(callback));
-            std::vector<uint8_t> serializedPointer(8);
-            memcpy(&serializedPointer[0], &cb, 8);
-            onResponseInNode->SetInternalField(0, Nan::CopyBuffer((char*)serializedPointer.data(), serializedPointer.size()).ToLocalChecked());
-            v8::Local<v8::Value> argv[] = {
-                Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked(),
-                onResponseInNode
-            };
-            onRequest->Call(2, argv);
-        },
+        [onRequest](std::vector<uint8_t>&& data, ubinder::Callback&& callback) {
+            tasksToQueue->PushTask(CreateOnRequestFunction(onRequest, std::move(data), std::move(callback)));
+        }
+       ,
         [onNotification](std::vector<uint8_t>&& data) {
             Nan::HandleScope scope;
             v8::Local<v8::Value> argv[] = { Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked() };
