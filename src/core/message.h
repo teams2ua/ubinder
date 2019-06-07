@@ -13,7 +13,7 @@ enum MESSAGE_TYPE {
 
 struct Message {
     std::vector<uint8_t> data;
-    const void* request { nullptr };
+    uint64_t request;
     MESSAGE_TYPE type;
 };
 

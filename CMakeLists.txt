@@ -16,10 +16,15 @@ target_sources(ubinder_core PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/endpoint.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/message.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core/message_pipe.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/message_pipe.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/message_pipe.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/binding.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core/binding.cpp)
 target_include_directories(ubinder_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(ubinder_core INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+add_subdirectory(src/java)
 
 if (WITH_EXAMPLES)
     add_subdirectory(examples)
 endif()
+

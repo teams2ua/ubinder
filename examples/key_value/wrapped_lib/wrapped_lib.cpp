@@ -79,11 +79,11 @@ public:
 
 static ubinder::CppWrapper<KeyValueStorageLib> CppWrapperInstance;
 
-void OnRequestFunc(const void* request, const char* data, size_t dataSize) {
+void OnRequestFunc(uint64_t request, const char* data, size_t dataSize) {
     CppWrapperInstance.onRequest(request, data, dataSize);
 }
 
-void OnResponseFunc(const void* request, const char* data, size_t dataSize) {
+void OnResponseFunc(uint64_t request, const char* data, size_t dataSize) {
     CppWrapperInstance.onResponse(request, data, dataSize);
 }
 

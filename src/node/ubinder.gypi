@@ -11,7 +11,9 @@
                  "../core/endpoint.h",
                  "../core/message.h",
                  "../core/message_pipe.cpp",
-                 "../core/message_pipe.h"],
+                 "../core/message_pipe.h",
+                 "../core/binding.cpp",
+                 "../core/binding.h"],
     'include_dirs': [
       "<!(node -e \"require('nan')\")",
       "../../include",

@@ -1,4 +1,5 @@
-#include "node_binding.h"
+#include "core/binding.h"
+#include "ubinder/wrapper_interface.h"
 #include <vector>
 #include <iostream>
 #include <functional>
@@ -11,92 +12,9 @@
 
 #include "loops_tasks_queue.h"
 
-namespace ubinder {
-
-    NodeBinding::NodeBinding() {
-        // connect wrapper interface initWrapper function to "client" side of channel (both side of channel are endpoints)
-        // all the information is known on link time, so we can create client endpoint in constructor of static object
-        // server side will be registered later in separete function
-        initWrapper(&onRequestFromWrapper, &onResponseFromWrapper, &onNotificationFromWrapper, &_clientOnRequest, &_clientOnResponse, &_clientOnNotification);
-        _client = std::make_unique<Endpoint>(
-            [this](Message&& msg) {this->_channel._clientToServer.push(std::move(msg)); },
-            [this]() {return this->_channel._serverToClient.get(); },
-            [this](const void* request, std::vector<uint8_t>&& data) {this->_clientOnRequest(request, (const char*)data.data(), data.size()); },
-            [this](const void* request, std::vector<uint8_t>&& data) {this->_clientOnResponse(request, (const char*)data.data(), data.size()); },
-            [this](std::vector<uint8_t>&& data) {this->_clientOnNotification((const char*)data.data(), data.size()); });
-    }
-
-    void NodeBinding::onRequestFromWrapper(const void* request, const char* data, size_t dataSize) {
-        std::vector<uint8_t> buffer(data, data + dataSize);
-        nodeBinding._client->SendRequest(request, std::move(buffer));
-    }
-
-    void NodeBinding::onResponseFromWrapper(const void* request, const char* data, size_t dataSize) {
-        std::vector<uint8_t> buffer(data, data + dataSize);
-        nodeBinding._client->SendResponse(request, std::move(buffer));
-    }
-    
-    void NodeBinding::onNotificationFromWrapper(const char* data, size_t dataSize) {
-        std::vector<uint8_t> buffer(data, data + dataSize);
-        nodeBinding._client->SendNotification(std::move(buffer));
-    }
-    ///////////////////////////////////
-
-    void NodeBinding::SendRequest(std::vector<uint8_t>&& reqData, Callback&& onResponse) {
-        Callback* cb = new Callback(std::move(onResponse));
-        _server->SendRequest(reinterpret_cast<const void*>(cb), std::move(reqData));
-    }
-
-    void NodeBinding::SendNotification(std::vector<uint8_t>&& reqData) {
-        _server->SendNotification(std::forward<std::vector<uint8_t>>(reqData));
-    }
-
-    void NodeBinding::RegisterServer(std::function<void(std::vector<uint8_t>&&, Callback&&)> && onRequest, Callback&& onNotification) {
-        if (_server) return;
-        _server = std::make_unique<Endpoint>(
-            [this](Message&& msg) {this->_channel._serverToClient.push(std::move(msg)); },
-            [this]() {return this->_channel._clientToServer.get(); },
-            [this, onReq{ std::move(onRequest) }](const void* request, std::vector<uint8_t>&& data) {
-                onReq(std::move(data), [this, request](std::vector<uint8_t>&& buffer) {
-                    this->_server->SendResponse(request, std::move(buffer));
-                    });
-            },
-            [](const void* request, std::vector<uint8_t>&& data) {
-                const Callback* cb = reinterpret_cast<const Callback*>(request);
-                (*cb)(std::move(data));
-                delete cb;
-            },
-            [onNotif{std::move(onNotification)}](std::vector<uint8_t>&& data) {
-                onNotif(std::move(data));
-            });
-    }
-    /////////////////////////////
-
-    void NodeBinding::StartListen() {
-        _client->StartListen();
-        _server->StartListen();
-    }
-
-    NodeBinding NodeBinding::nodeBinding;
-};
 
 std::unique_ptr<ubinder::QueuedTasks> tasksToQueue;
-
-NAN_METHOD(getLength){
-    Nan::TypedArrayContents<uint8_t> buff(info[0]);
-    std::cout << buff.length() << std::endl;
-}
-
-NAN_METHOD(thereAndBack) {
-    Nan::TypedArrayContents<uint8_t> buff(info[0]);
-    std::vector<uint8_t> cpp(*buff, *buff + buff.length());
-    info.GetReturnValue().Set(Nan::CopyBuffer((char*)cpp.data(), cpp.size()).ToLocalChecked());
-}
-
-NAN_METHOD(Method) {
-    std::vector<uint8_t> some_data {0,1,2,3,4,5,6,7,8,9,10};
-    info.GetReturnValue().Set(Nan::CopyBuffer((char*)some_data.data(), some_data.size()).ToLocalChecked());
-}
+Binding Binding::binding(initWrapper);
 
 NAN_METHOD(sendRequest) {
     Nan::TypedArrayContents<uint8_t> buff(info[0]);
@@ -109,13 +27,13 @@ NAN_METHOD(sendRequest) {
             callback->Call(1, argv);
             });
     });
-    ubinder::NodeBinding::nodeBinding.SendRequest(std::move(cpp), std::move(lmb));
+    ubinder::Binding::binding.SendRequest(std::move(cpp), std::move(lmb));
 }
 
 NAN_METHOD(sendNotification) {
     Nan::TypedArrayContents<uint8_t> buff(info[0]);
     std::vector<uint8_t> data(*buff, *buff + buff.length());
-    ubinder::NodeBinding::nodeBinding.SendNotification(std::move(data));
+    ubinder::Binding::binding.SendNotification(std::move(data));
 }
 
 void OnResponseInNode(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -151,7 +69,7 @@ std::function<void()> CreateOnRequestFunction(std::shared_ptr<Nan::Callback> jsO
 NAN_METHOD(registerLib) {
     auto onRequest = std::make_shared<Nan::Callback>(info[0].As<v8::Function>());
     auto onNotification = std::make_shared<Nan::Callback>(info[1].As<v8::Function>());
-    ubinder::NodeBinding::nodeBinding.RegisterServer(
+    ubinder::Binding::binding.RegisterServer(
         [onRequest](std::vector<uint8_t>&& data, ubinder::Callback&& callback) {
             tasksToQueue->PushTask(CreateOnRequestFunction(onRequest, std::move(data), std::move(callback)));
         }
@@ -162,7 +80,7 @@ NAN_METHOD(registerLib) {
             onNotification->Call(1, argv);
         }
     );
-    ubinder::NodeBinding::nodeBinding.StartListen();
+    ubinder::Binding::binding.StartListen();
 }
 
 NAN_MODULE_INIT(Init) {
