@@ -2,6 +2,9 @@ cmake_minimum_required (VERSION 3.1)
 
 project(ubinder)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(ubinder_BUILDING_WRAPPER OFF CACHE BOOL "If ON, means we build wrapper, not binding")
 
 # wrapper could link this library to have include dirs
