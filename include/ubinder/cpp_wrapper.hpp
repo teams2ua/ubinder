@@ -10,7 +10,7 @@ public:
     typedef std::function<void(std::vector<uint8_t>&&, Callback&&)> OnRequest;
 public:
     void SendRequest(std::vector<uint8_t>&& data, Callback&& callback) {
-        sendRequest(new Callback(std::move(callback)), (const char*)data.data(), data.size());
+        sendRequest(reinterpret_cast<uint64_t>(new Callback(std::move(callback))), (const char*)data.data(), data.size());
     }
 
     void SendNotification(std::vector<uint8_t>&& data) {
