@@ -34,3 +34,4 @@ node_modules/
 build/
 yarn.lock
 *.dll
+/build-android

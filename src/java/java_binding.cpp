@@ -26,7 +26,7 @@ JNIEnv* GetEnv() {
     JNIEnv* env;
     auto res = javaClass.vm->GetEnv((void**)& env, JNI_VERSION_1_6);
     if (res == JNI_EDETACHED) {
-        res = javaClass.vm->AttachCurrentThread((void**)& env, NULL);
+        res = javaClass.vm->AttachCurrentThread(& env, NULL);
     }
     if (res != JNI_OK) {
         cout << "Can't get JNIEnv on message consuming thread" << endl;
