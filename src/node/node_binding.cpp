@@ -1,4 +1,4 @@
-#include "core/binding.h"
+#include "../core/binding.h"
 #include "ubinder/wrapper_interface.h"
 #include <vector>
 #include <iostream>
@@ -12,22 +12,27 @@
 
 #include "loops_tasks_queue.h"
 
+using namespace ubinder;
 
 std::unique_ptr<ubinder::QueuedTasks> tasksToQueue;
-Binding Binding::binding(initWrapper);
+Binding ubinder::Binding::binding(initWrapper);
 
 NAN_METHOD(sendRequest) {
-    Nan::TypedArrayContents<uint8_t> buff(info[0]);
+    Nan::TypedArrayContents<uint8_t> reqIdData(info[0]);
+    uint64_t reqId;
+    memcpy(&reqId, *reqIdData, 8);
+    Nan::TypedArrayContents<uint8_t> buff(info[1]);
     std::vector<uint8_t> cpp(*buff, *buff + buff.length());
-    auto callback = std::make_shared<Nan::Callback>(info[1].As<v8::Function>());
-    ubinder::Callback lmb([callback](std::vector<uint8_t>&& data){
-        tasksToQueue->PushTask([callback{ std::move(callback) }, data{std::move(data)}]{
-            Nan::HandleScope scope;
-            v8::Local<v8::Value> argv[] = { Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked() };
-            callback->Call(1, argv);
-            });
-    });
-    ubinder::Binding::binding.SendRequest(std::move(cpp), std::move(lmb));
+    ubinder::Binding::binding.SendRequest(reqId, std::move(cpp));
+}
+
+NAN_METHOD(sendResponse) {
+    Nan::TypedArrayContents<uint8_t> reqIdData(info[0]);
+    uint64_t reqId;
+    memcpy(&reqId, *reqIdData, 8);
+    Nan::TypedArrayContents<uint8_t> buff(info[1]);
+    std::vector<uint8_t> cpp(*buff, *buff + buff.length());
+    ubinder::Binding::binding.SendResponse(reqId, std::move(cpp));
 }
 
 NAN_METHOD(sendNotification) {
@@ -36,49 +41,39 @@ NAN_METHOD(sendNotification) {
     ubinder::Binding::binding.SendNotification(std::move(data));
 }
 
-void OnResponseInNode(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-    Nan::TypedArrayContents<uint8_t> buff(info[0]);
-    std::vector<uint8_t> data(*buff, *buff + buff.length());
-    Nan::TypedArrayContents<uint8_t> pointerData(info[1]);
-    uint64_t pointer;
-    memcpy(&pointer, *pointerData, 8);
-    ubinder::Callback* cb = reinterpret_cast<ubinder::Callback*>(pointer);
-    (*cb)(std::move(data));
-    delete cb;
+std::function<void()> CreateOnReqRespFunction(std::shared_ptr<Nan::Callback> onReqResp, uint64_t reqId, std::vector<uint8_t>&& data) {
+    return
+        [onReqResp, reqId, data{ std::move(data) }]() {
+            Nan::HandleScope scope;
+            std::vector<uint8_t> serializedReqId(8);
+            memcpy(&serializedReqId[0], &serializedReqId, 8);
+            v8::Local<v8::Value> argv[] = {
+                Nan::CopyBuffer((char*)serializedReqId.data(), serializedReqId.size()).ToLocalChecked(),
+                Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked(),
+            };
+            onReqResp->Call(2, argv);
+        };
 }
 
-
-std::function<void()> CreateOnRequestFunction(std::shared_ptr<Nan::Callback> jsOnRequest, std::vector<uint8_t>&& data, ubinder::Callback&& callback) {
+std::function<void()> CreateOnNotification(std::shared_ptr<Nan::Callback> onNotification, std::vector<uint8_t>&& data) {
     return
-        [jsOnRequest, data{ std::move(data) }, callback{ std::move(callback) }]() {
-            Nan::HandleScope scope;
-            v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(OnResponseInNode);
-            auto onResponseInNode = tpl->GetFunction();
-            auto cb = new ubinder::Callback(std::move(callback));
-            std::vector<uint8_t> serializedPointer(8);
-            memcpy(&serializedPointer[0], &cb, 8);
-            v8::Local<v8::Value> argv[] = {
-                Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked(),
-                onResponseInNode,
-                Nan::CopyBuffer((char*)serializedPointer.data(), serializedPointer.size()).ToLocalChecked()
-            };
-            jsOnRequest->Call(3, argv);
+        [onNotification, data{ std::move(data) }]() {
+        Nan::HandleScope scope;
+        v8::Local<v8::Value> argv[] = {
+            Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked(),
         };
+        onNotification->Call(1, argv);
+    };
 }
 
 NAN_METHOD(registerLib) {
     auto onRequest = std::make_shared<Nan::Callback>(info[0].As<v8::Function>());
-    auto onNotification = std::make_shared<Nan::Callback>(info[1].As<v8::Function>());
-    ubinder::Binding::binding.RegisterServer(
-        [onRequest](std::vector<uint8_t>&& data, ubinder::Callback&& callback) {
-            tasksToQueue->PushTask(CreateOnRequestFunction(onRequest, std::move(data), std::move(callback)));
-        }
-       ,
-        [onNotification](std::vector<uint8_t>&& data) {
-            Nan::HandleScope scope;
-            v8::Local<v8::Value> argv[] = { Nan::CopyBuffer((char*)data.data(), data.size()).ToLocalChecked() };
-            onNotification->Call(1, argv);
-        }
+    auto onResponse = std::make_shared<Nan::Callback>(info[1].As<v8::Function>());
+    auto onNotification = std::make_shared<Nan::Callback>(info[2].As<v8::Function>());
+    ubinder::Binding::binding.Register(
+        [onRequest](uint64_t reqId, std::vector<uint8_t>&& data) { tasksToQueue->PushTask(CreateOnReqRespFunction(onRequest, reqId, std::move(data))); },
+        [onResponse](uint64_t reqId, std::vector<uint8_t>&& data) { tasksToQueue->PushTask(CreateOnReqRespFunction(onResponse, reqId, std::move(data))); },
+        [onNotification](std::vector<uint8_t>&& data) {tasksToQueue->PushTask(CreateOnNotification(onNotification, std::move(data)));}
     );
     ubinder::Binding::binding.StartListen();
 }
@@ -86,6 +81,7 @@ NAN_METHOD(registerLib) {
 NAN_MODULE_INIT(Init) {
     tasksToQueue = std::make_unique<ubinder::QueuedTasks>(uv_default_loop());
     NAN_EXPORT(target, sendRequest);
+    NAN_EXPORT(target, sendResponse);
     NAN_EXPORT(target, sendNotification);
     NAN_EXPORT(target, registerLib);
 }
