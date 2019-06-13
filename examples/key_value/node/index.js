@@ -1,17 +1,31 @@
 key_store_node = require('bindings')('key_store_node')
 messages = require('./generated/messages_pb')
 
-function OnRequest(req, callback) {
+function Callbacker(wrapperLib) {
     
+    function OnRequest(req, data) {
+    
+    }
+
+    function OnResponse(req, data) {
+        console.log(req);    
+    }
+
+    function OnNotification(data) {
+    
+    }
+    this.lib = wrapperLib;
+    this.lib.registerLib(OnRequest, OnResponse, OnNotification);
+
+    this.sendRequest = function (req, callback) {
+        var reqId = new Uint8Array(8);
+        reqId[0] = 16;
+        this.lib.sendRequest(reqId, req);
+    }
 }
 
-function OnNotification(notification) {
-    
-}
 
-register = function () {
-    key_store_node.registerLib(OnRequest, OnNotification);
-}
+callbacker = new Callbacker(key_store_node)
 
 createAddValue = function(key, value) {
     var addVal = new messages.AddValueRequest();
@@ -35,7 +49,7 @@ createGetValue = function (key) {
 sendAddValue = function(key, value) {
     return new Promise((resolve, reject) => {
         var msg = createAddValue(key, value).serializeBinary()
-        key_store_node.sendRequest(msg, 
+        callbacker.sendRequest(msg, 
             function(data){
                 var resp = messages.AddValueResponse.deserializeBinary(data);
                 if (resp.getError()=='') {
@@ -50,7 +64,7 @@ sendAddValue = function(key, value) {
 sendGetValue = function(key) {
     return new Promise((resolve, reject) => {
         var msg = createGetValue(key).serializeBinary()
-        key_store_node.sendRequest(msg, 
+        callbacker.sendRequest(msg, 
             function(data){
                 var resp = messages.GetValueResponse.deserializeBinary(data);
                 if (resp.getError()=='') {
@@ -64,7 +78,6 @@ sendGetValue = function(key) {
 
 
 run_test = function() {
-    register();
     sendAddValue("key1", "value1")
         .then(() => sendGetValue("key1"))
         .then((val) => console.log(val));
