@@ -1,7 +1,7 @@
 package com.ubinder;
 
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class Ubinder {
     private static native void ubinderInit();
@@ -16,24 +16,22 @@ public class Ubinder {
     public native void SendNotification(byte[] arr);
 
     public void OnRequest(long req, byte[] arr) {
-         _onRequest.apply(req, arr);
+         _onRequest.accept(req, arr);
     }
 
     public void OnResponse(long req, byte[] arr) {
-         _onResponse.apply(req, arr);
+         _onResponse.accept(req, arr);
     }
 
-    public void OnNotification(byte[] arr) {
-        _onNotification.apply(arr);
-    }
+    public void OnNotification(byte[] arr) { _onNotification.accept(arr); }
 
-    public Ubinder(BiFunction<Long, byte[], Void> onRequest, BiFunction<Long, byte[], Void> onResponse, Function<byte[], Void> onNotification) {
+    public Ubinder(BiConsumer<Long, byte[]> onRequest, BiConsumer<Long, byte[]> onResponse, Consumer<byte[]> onNotification) {
         _onRequest = onRequest;
         _onResponse = onResponse;
         _onNotification = onNotification;
     }
  
-    private BiFunction<Long, byte[], Void> _onRequest;
-    private BiFunction<Long, byte[], Void> _onResponse;
-    private Function<byte[], Void> _onNotification;
+    private BiConsumer<Long, byte[]> _onRequest;
+    private BiConsumer<Long, byte[]> _onResponse;
+    private Consumer<byte[]> _onNotification;
 }

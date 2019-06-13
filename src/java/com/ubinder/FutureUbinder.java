@@ -5,19 +5,40 @@ import com.ubinder.Ubinder;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class FutureUbinder {
 
     public FutureUbinder(
-        BiFunction<byte[], Function<byte[], Void>, Void> onRequest,
-        Function<byte[], Void> onNotification) {
-        _onRequest = onRequest;
+        final BiConsumer<byte[], Consumer<byte[]>> onRequest,
+        final Consumer<byte[]> onNotification) {
         _ubinder = new Ubinder(
-            (Long req, byte[] arr) -> this.OnRequest(req, arr),
-            (Long req, byte[] arr) -> this.OnResponse(req, arr),
-            onNotification);
+                new BiConsumer<Long, byte[]>() {
+                    @Override
+                    public void accept(final Long req, byte[] arr) {
+                        onRequest.accept(
+                                arr,
+                                new Consumer<byte[]>() {
+                                    @Override
+                                    public void accept(byte[] responseData) {
+                                        _ubinder.SendResponse(req, responseData);
+                                    }
+                                });
+                    }
+                },
+                new BiConsumer<Long, byte[]>() {
+                    @Override
+                    public void accept(Long req, byte[] arr) {
+                        CompletableFuture<byte[]> future = _sendedRequests.get(req);
+                        if (future != null) {
+                            _sendedRequests.remove(req);
+                            future.complete(arr);
+                        }
+                    }
+                },
+                onNotification
+        );
         _sendedRequests = new HashMap<>();
         _random = new Random();
     }
@@ -30,30 +51,7 @@ public class FutureUbinder {
         return future;
     }
 
-    public void SendNotification(byte[] data) {
-        _ubinder.SendNotification(data);
-    }
-
-    private Void OnRequest(Long req, byte[] arr) {
-        return _onRequest.apply(
-            arr,
-            (responseData) -> {
-                _ubinder.SendResponse(req, responseData);
-                return null;
-            });
-    }
-
-    public Void OnResponse(Long req, byte[] arr) {
-        CompletableFuture<byte[]> future = _sendedRequests.get(req);
-        if (future != null) {
-            _sendedRequests.remove(req);
-            future.complete(arr);
-        }
-        return null;
-    }
-
     private Ubinder _ubinder;
     private HashMap<Long, CompletableFuture<byte[]>> _sendedRequests;
     private java.util.Random _random;
-    private BiFunction<byte[], Function<byte[], Void>, Void> _onRequest;
 }
