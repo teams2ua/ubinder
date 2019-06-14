@@ -2,7 +2,7 @@
 #include "ubinder/wrapper_interface.h"
 #include <vector>
 #include <string>
-#include <iostream>
+//#include <iostream>
 #include <memory>
 
 #include "core/binding.h"
@@ -29,7 +29,7 @@ JNIEnv* GetEnv() {
         res = javaClass.vm->AttachCurrentThread(& env, NULL);
     }
     if (res != JNI_OK) {
-        cout << "Can't get JNIEnv on message consuming thread" << endl;
+        //cout << "Can't get JNIEnv on message consuming thread" << endl;
         return nullptr;
     }
     return env;
@@ -48,7 +48,7 @@ void initJavaObject(JNIEnv* env, jobject obj) {
                 }
                 jbyteArray arr = env->NewByteArray(data.size());
                 if (arr == NULL) {
-                    cout << "Can't create ByteArray" << endl;
+                    //cout << "Can't create ByteArray" << endl;
                     return;
                 }
                 env->SetByteArrayRegion(arr, 0, data.size(), (jbyte*)data.data());
@@ -61,7 +61,7 @@ void initJavaObject(JNIEnv* env, jobject obj) {
                 }
                 jbyteArray arr = env->NewByteArray(data.size());
                 if (arr == NULL) {
-                    cout << "Can't create ByteArray" << endl;
+                    //cout << "Can't create ByteArray" << endl;
                     return;
                 }
                 env->SetByteArrayRegion(arr, 0, data.size(), (jbyte*)data.data());
@@ -74,7 +74,7 @@ void initJavaObject(JNIEnv* env, jobject obj) {
                 }
                 jbyteArray arr = env->NewByteArray(data.size());
                 if (arr == NULL) {
-                    cout << "Can't create ByteArray" << endl;
+                    //cout << "Can't create ByteArray" << endl;
                     return;
                 }
                 env->SetByteArrayRegion(arr, 0, data.size(), (jbyte*)data.data());
@@ -88,27 +88,27 @@ void initJavaObject(JNIEnv* env, jobject obj) {
 
 JNIEXPORT void JNICALL Java_com_ubinder_Ubinder_ubinderInit(JNIEnv* env, jobject obj) {
     if (env->GetJavaVM(&javaClass.vm) < 0) {
-        cout << "Can't get pointer to JavaVM" << endl;
+        //cout << "Can't get pointer to JavaVM" << endl;
         return;
     }
     auto localHandler = env->FindClass("com/ubinder/Ubinder"); 
     if (localHandler == 0) {
-        cout << "Can't find class com.ubinder.Ubinder" << endl;
+        //cout << "Can't find class com.ubinder.Ubinder" << endl;
         return;
     }
     javaClass.onRequest = env->GetMethodID(localHandler, "OnRequest", "(J[B)V");
     if (javaClass.onRequest == 0) {
-        cout << "Can't find method OnRequest with signature (J[B)V" << endl;
+        //cout << "Can't find method OnRequest with signature (J[B)V" << endl;
         return;
     }
     javaClass.onResponse = env->GetMethodID(localHandler, "OnResponse", "(J[B)V");
     if (javaClass.onRequest == 0) {
-        cout << "Can't find method OnResponse with signature (J[B)V" << endl;
+        //cout << "Can't find method OnResponse with signature (J[B)V" << endl;
         return;
     }
     javaClass.onNotification = env->GetMethodID(localHandler, "OnNotification", "([B)V");
     if (javaClass.onNotification == 0) {
-        cout << "Can't find method OnNotification with signature ([B)V" << endl;
+        //cout << "Can't find method OnNotification with signature ([B)V" << endl;
         return;
     }
     initJavaObjectFlag = std::make_unique<std::once_flag>();
