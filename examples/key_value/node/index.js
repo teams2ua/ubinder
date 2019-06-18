@@ -1,31 +1,17 @@
 key_store_node = require('bindings')('key_store_node')
+ubinder = require('./ubinder');
 messages = require('./generated/messages_pb')
 
-function Callbacker(wrapperLib) {
-    
-    function OnRequest(req, data) {
-    
-    }
+function OnRequest(data, callback) {
+    console.log("OnRequest");
+}
 
-    function OnResponse(req, data) {
-        console.log(req);    
-    }
-
-    function OnNotification(data) {
-    
-    }
-    this.lib = wrapperLib;
-    this.lib.registerLib(OnRequest, OnResponse, OnNotification);
-
-    this.sendRequest = function (req, callback) {
-        var reqId = new Uint8Array(8);
-        reqId[0] = 16;
-        this.lib.sendRequest(reqId, req);
-    }
+function OnNotification(data) {
+    console.log("OnNotification");
 }
 
 
-callbacker = new Callbacker(key_store_node)
+callbacker = new ubinder.Callbacker(key_store_node, OnRequest, OnNotification)
 
 createAddValue = function(key, value) {
     var addVal = new messages.AddValueRequest();
@@ -46,45 +32,35 @@ createGetValue = function (key) {
     return req;
 }
 
-sendAddValue = function(key, value) {
-    return new Promise((resolve, reject) => {
-        var msg = createAddValue(key, value).serializeBinary()
-        callbacker.sendRequest(msg, 
-            function(data){
-                var resp = messages.AddValueResponse.deserializeBinary(data);
-                if (resp.getError()=='') {
-                    resolve();
-                }else {
-                    reject(new Error(resp.getError()));
-                }
-            });        
-        });
+async function sendAddValue(key, value) {
+        var msg = createAddValue(key, value).serializeBinary();
+        var data = await callbacker.sendRequest(msg);
+        var resp = messages.AddValueResponse.deserializeBinary(data);
+        if (resp.getError()!='')
+            throw new Error(resp.getError())
 }
 
-sendGetValue = function(key) {
-    return new Promise((resolve, reject) => {
-        var msg = createGetValue(key).serializeBinary()
-        callbacker.sendRequest(msg, 
-            function(data){
-                var resp = messages.GetValueResponse.deserializeBinary(data);
-                if (resp.getError()=='') {
-                    resolve(resp.getValue());
-                }else {
-                    reject(new Error(resp.getError()));
-                }
-            });
-    });
+async function sendGetValue(key) {
+    var msg = createGetValue(key).serializeBinary();
+    var data = await callbacker.sendRequest(msg);
+    var resp = messages.GetValueResponse.deserializeBinary(data);
+    if (resp.getError()=='')
+        return resp.getValue();
+    throw new Error(resp.getError());
 }
 
 
 run_test = function() {
     sendAddValue("key1", "value1")
         .then(() => sendGetValue("key1"))
-        .then((val) => console.log(val));
+        .then((val) => console.log(val))
+        .catch((x)=> console.log(x));
     sendAddValue("key2", "value2")
         .then(() => sendGetValue("key2"))
-        .then((val) => console.log(val));
+        .then((val) => console.log(val))
+        .catch((x)=> console.log(x));
     sendAddValue("key3", "value3")
         .then(() => sendGetValue("key3"))
-        .then((val) => console.log(val));
+        .then((val) => console.log(val))
+        .catch((x)=> console.log(x));
 }

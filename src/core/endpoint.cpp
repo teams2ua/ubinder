@@ -5,8 +5,8 @@ namespace ubinder {
 Endpoint::Endpoint(
     PushFunction&& pushFunction,
     GetFunction&& getFunction,
-    std::function<void(uint64_t, std::vector<uint8_t>&&)>&& onRequest,
-    std::function<void(uint64_t, std::vector<uint8_t>&&)>&& onResponse,
+    std::function<void(uint32_t, std::vector<uint8_t>&&)>&& onRequest,
+    std::function<void(uint32_t, std::vector<uint8_t>&&)>&& onResponse,
     std::function<void(std::vector<uint8_t>&&)>&& onNotification)
     : _pushFunction(std::move(pushFunction))
     , _getFunction(std::move(getFunction))
@@ -19,11 +19,11 @@ void Endpoint::SendNotification(std::vector<uint8_t>&& notificationData) {
     _pushFunction(std::move(Message{ std::move(notificationData), 0, NOTIFICATION }));
 }
 
-void Endpoint::SendRequest(uint64_t request, std::vector<uint8_t>&& requestData) {
+void Endpoint::SendRequest(uint32_t request, std::vector<uint8_t>&& requestData) {
     _pushFunction(std::move(Message{ std::move(requestData), request, REQUEST }));
 }
 
-void Endpoint::SendResponse(uint64_t request, std::vector<uint8_t>&& responseData) {
+void Endpoint::SendResponse(uint32_t request, std::vector<uint8_t>&& responseData) {
     _pushFunction(std::move(Message{ std::move(responseData), request, RESPONSE }));
 }
 

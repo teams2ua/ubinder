@@ -14,9 +14,9 @@ public class FutureUbinder {
         final BiConsumer<byte[], Consumer<byte[]>> onRequest,
         final Consumer<byte[]> onNotification) {
         _ubinder = new Ubinder(
-                new BiConsumer<Long, byte[]>() {
+                new BiConsumer<Integer, byte[]>() {
                     @Override
-                    public void accept(final Long req, byte[] arr) {
+                    public void accept(final Integer req, byte[] arr) {
                         onRequest.accept(
                                 arr,
                                 new Consumer<byte[]>() {
@@ -27,9 +27,9 @@ public class FutureUbinder {
                                 });
                     }
                 },
-                new BiConsumer<Long, byte[]>() {
+                new BiConsumer<Integer, byte[]>() {
                     @Override
-                    public void accept(Long req, byte[] arr) {
+                    public void accept(Integer req, byte[] arr) {
                         CompletableFuture<byte[]> future = _sendedRequests.get(req);
                         if (future != null) {
                             _sendedRequests.remove(req);
@@ -45,13 +45,13 @@ public class FutureUbinder {
 
     public CompletableFuture<byte[]> SendRequest(byte[] data) {
         CompletableFuture<byte[]> future = new CompletableFuture<>();
-        long reqId = _random.nextLong();
+        int reqId = _random.nextLong();
         _sendedRequests.put(reqId, future);
         _ubinder.SendRequest(reqId, data);
         return future;
     }
 
     private Ubinder _ubinder;
-    private HashMap<Long, CompletableFuture<byte[]>> _sendedRequests;
+    private HashMap<Integer, CompletableFuture<byte[]>> _sendedRequests;
     private java.util.Random _random;
 }

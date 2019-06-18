@@ -26,7 +26,11 @@ JNIEnv* GetEnv() {
     JNIEnv* env;
     auto res = javaClass.vm->GetEnv((void**)& env, JNI_VERSION_1_6);
     if (res == JNI_EDETACHED) {
-        res = javaClass.vm->AttachCurrentThread(& env, NULL);
+#ifdef ANDROID
+        res = javaClass.vm->AttachCurrentThread(&env, NULL);
+#else
+        res = javaClass.vm->AttachCurrentThread((void**)&env, NULL);
+#endif // ANDROID
     }
     if (res != JNI_OK) {
         //cout << "Can't get JNIEnv on message consuming thread" << endl;
@@ -41,7 +45,7 @@ void initJavaObject(JNIEnv* env, jobject obj) {
     std::call_once(*initJavaObjectFlag, [env, obj]() {
         javaClass.jubinderGlobalRef = env->NewGlobalRef(obj);
         ubinder::Binding::binding.Register(
-            [](uint64_t request, vector<uint8_t>&& data) {
+            [](uint32_t request, vector<uint8_t>&& data) {
                 JNIEnv* env = GetEnv();
                 if (env == nullptr) {
                     return;
@@ -54,7 +58,7 @@ void initJavaObject(JNIEnv* env, jobject obj) {
                 env->SetByteArrayRegion(arr, 0, data.size(), (jbyte*)data.data());
                 env->CallVoidMethod(javaClass.jubinderGlobalRef, javaClass.onRequest, request, arr);
             },
-            [](uint64_t request, vector<uint8_t>&& data) {
+            [](uint32_t request, vector<uint8_t>&& data) {
                 JNIEnv* env = GetEnv();
                 if (env == nullptr) {
                     return;
@@ -114,18 +118,18 @@ JNIEXPORT void JNICALL Java_com_ubinder_Ubinder_ubinderInit(JNIEnv* env, jobject
     initJavaObjectFlag = std::make_unique<std::once_flag>();
 }
 
-JNIEXPORT void JNICALL Java_com_ubinder_Ubinder_SendRequest(JNIEnv* env, jobject obj, jlong req, jbyteArray arr) {
+JNIEXPORT void JNICALL Java_com_ubinder_Ubinder_SendRequest(JNIEnv* env, jobject obj, jint req, jbyteArray arr) {
     initJavaObject(env, obj);
     vector<uint8_t> buffer(env->GetArrayLength(arr));
     env->GetByteArrayRegion(arr, 0, buffer.size(), (jbyte*)buffer.data());
-    ubinder::Binding::binding.SendRequest(req, std::move(buffer));
+    ubinder::Binding::binding.SendRequest((uint32_t)req, std::move(buffer));
 }
 
-JNIEXPORT void JNICALL Java_com_ubinder_Ubinder_SendResponse(JNIEnv* env, jobject obj, jlong req, jbyteArray arr) {
+JNIEXPORT void JNICALL Java_com_ubinder_Ubinder_SendResponse(JNIEnv* env, jobject obj, jint req, jbyteArray arr) {
     initJavaObject(env, obj);
     vector<uint8_t> buffer(env->GetArrayLength(arr));
     env->GetByteArrayRegion(arr, 0, buffer.size(), (jbyte*)buffer.data());
-    ubinder::Binding::binding.SendResponse(req, std::move(buffer));
+    ubinder::Binding::binding.SendResponse((uint32_t)req, std::move(buffer));
 }
 
 JNIEXPORT void JNICALL Java_com_ubinder_Ubinder_SendNotification(JNIEnv* env, jobject obj, jbyteArray arr) {
