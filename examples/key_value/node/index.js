@@ -1,5 +1,5 @@
 key_store_node = require('bindings')('key_store_node')
-ubinder = require('./ubinder');
+ubinder = require('../../../src/node/ubinder');
 messages = require('./generated/messages_pb')
 
 function OnRequest(data, callback) {
