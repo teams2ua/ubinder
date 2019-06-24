@@ -16,7 +16,8 @@ module.exports.Callbacker = class Callbacker {
             value.resolve(data);
         }
         this.OnRequest = function(reqId, data) {
-            this.onRequest(data, function (data) { this.lib.sendResponse(reqId, data); });
+            var sendFunction = this.lib.sendResponse;
+            this.onRequest(data, function (responseData) { sendFunction(reqId, responseData); });
         }
 
         this.sendRequest = function (data) {
