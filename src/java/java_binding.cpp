@@ -100,12 +100,12 @@ JNIEXPORT void JNICALL Java_com_ubinder_Ubinder_ubinderInit(JNIEnv* env, jobject
         //cout << "Can't find class com.ubinder.Ubinder" << endl;
         return;
     }
-    javaClass.onRequest = env->GetMethodID(localHandler, "OnRequest", "(J[B)V");
+    javaClass.onRequest = env->GetMethodID(localHandler, "OnRequest", "(I[B)V");
     if (javaClass.onRequest == 0) {
         //cout << "Can't find method OnRequest with signature (J[B)V" << endl;
         return;
     }
-    javaClass.onResponse = env->GetMethodID(localHandler, "OnResponse", "(J[B)V");
+    javaClass.onResponse = env->GetMethodID(localHandler, "OnResponse", "(I[B)V");
     if (javaClass.onRequest == 0) {
         //cout << "Can't find method OnResponse with signature (J[B)V" << endl;
         return;
