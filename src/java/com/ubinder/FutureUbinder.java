@@ -45,7 +45,7 @@ public class FutureUbinder {
 
     public CompletableFuture<byte[]> SendRequest(byte[] data) {
         CompletableFuture<byte[]> future = new CompletableFuture<>();
-        int reqId = _random.nextLong();
+        int reqId = _random.nextInt();
         _sendedRequests.put(reqId, future);
         _ubinder.SendRequest(reqId, data);
         return future;

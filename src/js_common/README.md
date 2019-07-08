@@ -1,0 +1,1 @@
+Here are files that can be usefull for all JavaScript hosts (ReactNative, Node etc.)

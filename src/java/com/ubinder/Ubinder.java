@@ -31,7 +31,7 @@ public class Ubinder {
         _onNotification = onNotification;
     }
  
-    private BiConsumer<Long, byte[]> _onRequest;
-    private BiConsumer<Long, byte[]> _onResponse;
+    private BiConsumer<Integer, byte[]> _onRequest;
+    private BiConsumer<Integer, byte[]> _onResponse;
     private Consumer<byte[]> _onNotification;
 }
