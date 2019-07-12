@@ -3,7 +3,7 @@
           "version": "1.0.0",
           "description": "Allows to bind native library to Node through async RPC interface, frees you from knowing any details related to Node/V8/etc.",
           "main": "index.js",
-          "homepage": "https://github.com/teams2ua/ubinder/blob/master/README.md",
+          "homepage": "https://github.com/teams2ua/ubinder/blob/master/src/node/README.md",
           "repository": "https://github.com/teams2ua/ubinder",
           "author": "https://github.com/teams2ua",
           "license": "MIT",
