@@ -1,0 +1,27 @@
+{
+          "name": "ubinder",
+          "version": "1.0.0",
+          "description": "Allows to bind native library to Node through async RPC interface, frees you from knowing any details related to Node/V8/etc.",
+          "main": "index.js",
+          "homepage": "https://github.com/teams2ua/ubinder/blob/master/README.md",
+          "repository": "https://github.com/teams2ua/ubinder",
+          "author": "https://github.com/teams2ua",
+          "license": "MIT",
+          "files": [
+                    "src/node/node_binding.cpp",
+                    "src/node/loops_tasks_queue.cpp",
+                    "src/node/loops_tasks_queue.h",
+                    "src/core/channel.h",
+                    "src/core/endpoint.cpp",
+                    "src/core/endpoint.h",
+                    "src/core/message.h",
+                    "src/core/message_pipe.cpp",
+                    "src/core/message_pipe.h",
+                    "src/core/binding.cpp",
+                    "src/core/binding.h",
+                    "include/ubinder/function_types.h",
+                    "include/ubinder/wrapper_interface.h",
+                    "ubinder.gypi"
+          ],
+          "dependencies": {}
+}
