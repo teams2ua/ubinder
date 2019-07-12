@@ -6,9 +6,9 @@
 yarn add ubinder
 yarn add nan
 ```
-Create `binding.gyp` file, include ubinder.gypi and define two variables that it use
-    * `target_module_name` - this will be the .node file you building
-    * `wrapper_libs` - absolut path to the native binary that implement ubinder-wrapper interface (see https://raw.githubusercontent.com/teams2ua/ubinder/master/README.md)
+Create `binding.gyp` file, include ubinder.gypi and define two variables that it use:
+* `target_module_name` - this will be the .node file you building
+* `wrapper_libs` - absolut path to the native binary that implement ubinder-wrapper interface [see](../../HowToWrap.md)
 For example:
 
 ```
