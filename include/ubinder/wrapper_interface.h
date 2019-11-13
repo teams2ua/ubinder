@@ -22,9 +22,11 @@ WRAPPER_EXPORT void initWrapper(
     RequestResponse sendRequest,
     RequestResponse sendResponse,
     Notification sendNotification,
+    ExitRequestResponse sendExit,
     RequestResponse* onRequest,
     RequestResponse* onResponse,
-    Notification* onNotification);
+    Notification* onNotification,
+    ExitRequestResponse* onExit);
     
 #ifdef __cplusplus
 }

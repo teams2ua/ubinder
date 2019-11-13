@@ -57,6 +57,10 @@ public:
         wrapper.OnNotification(std::move(incomingData));
     }
 
+    void onExit() {
+        wrapper.OnExit();
+    }
+
     void initWrapper() {
         wrapper.Init();
     }
@@ -67,6 +71,7 @@ public:
     ::RequestResponse sendRequest;
     ::RequestResponse sendResponse;
     ::Notification sendNotification;
+    ::ExitRequestResponse sendExit;
 private:
     uint32_t reqId;
     std::mutex _mapLock;

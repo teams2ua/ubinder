@@ -65,12 +65,24 @@ NAN_METHOD(registerLib) {
     auto onRequest = std::make_shared<Nan::Callback>(info[0].As<v8::Function>());
     auto onResponse = std::make_shared<Nan::Callback>(info[1].As<v8::Function>());
     auto onNotification = std::make_shared<Nan::Callback>(info[2].As<v8::Function>());
+    auto onExit = std::make_shared<Nan::Callback>(info[3].As<v8::Function>());
     ubinder::Binding::binding.Register(
         [onRequest](uint32_t reqId, std::vector<uint8_t>&& data) { tasksToQueue->PushTask(CreateOnReqRespFunction(onRequest, reqId, std::move(data))); },
         [onResponse](uint32_t reqId, std::vector<uint8_t>&& data) { tasksToQueue->PushTask(CreateOnReqRespFunction(onResponse, reqId, std::move(data))); },
-        [onNotification](std::vector<uint8_t>&& data) {tasksToQueue->PushTask(CreateOnNotification(onNotification, std::move(data)));}
+        [onNotification](std::vector<uint8_t>&& data) {tasksToQueue->PushTask(CreateOnNotification(onNotification, std::move(data)));},
+        [onExit]() {
+            tasksToQueue->PushTask([=](){
+                Nan::HandleScope scope;
+                v8::Local<v8::Value> argv[] = {};
+                onExit->Call(0, argv);
+            });
+        }
     );
     ubinder::Binding::binding.StartListen();
+}
+
+NAN_METHOD(exit) {
+    ubinder::Binding::binding.Exit();
 }
 
 NAN_MODULE_INIT(Init) {
@@ -79,6 +91,7 @@ NAN_MODULE_INIT(Init) {
     NAN_EXPORT(target, sendResponse);
     NAN_EXPORT(target, sendNotification);
     NAN_EXPORT(target, registerLib);
+    NAN_EXPORT(target, exit);
 }
 
 NODE_MODULE(hello, Init)

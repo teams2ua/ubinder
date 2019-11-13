@@ -11,9 +11,11 @@ typedef void (*InitWrapperFunction)(
     RequestResponse sendRequest,
     RequestResponse sendResponse,
     Notification sendNotification,
+    ExitRequestResponse sendExit,
     RequestResponse* onRequest,
     RequestResponse* onResponse,
-    Notification* onNotification);
+    Notification* onNotification,
+    ExitRequestResponse* onExit);
 
 namespace ubinder {
 
@@ -27,26 +29,31 @@ public:
     static void onRequestFromWrapper(uint32_t request, const char* data, size_t dataSize);
     static void onResponseFromWrapper(uint32_t request, const char* data, size_t dataSize);
     static void onNotificationFromWrapper(const char* data, size_t dataSize);
+    static void onExitFromWrapper();
 
     // Pointer to the function that client is listening to
     // We should call this when we have something for client
     ::RequestResponse _clientOnRequest;
     ::RequestResponse _clientOnResponse;
     ::Notification _clientOnNotification;
+    ::ExitRequestResponse _clientOnExit;
 
     void Register(
         std::function<void(uint32_t, std::vector<uint8_t>&&)>&& onRequest,
         std::function<void(uint32_t, std::vector<uint8_t>&&)>&& onResponse,
-        std::function<void(std::vector<uint8_t>&&)>&& onNotification);
+        std::function<void(std::vector<uint8_t>&&)>&& onNotification,
+            std::function<void()>&& onExit);
 
     void StartListen();
+    void Exit();
 
     static ubinder::Binding binding;
 private:
     Channel _channel;
     std::unique_ptr<Endpoint> _server;
     std::unique_ptr<Endpoint> _client;
-
+    std::mutex _lock;
+    std::condition_variable _kill;
 };
 
 }

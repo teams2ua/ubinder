@@ -18,12 +18,15 @@ public:
         GetFunction&& getFunction,
         std::function<void(uint32_t, std::vector<uint8_t>&&)>&& onRequest,
         std::function<void(uint32_t, std::vector<uint8_t>&&)>&& onResponse,
-        std::function<void(std::vector<uint8_t>&&)>&& onNotification);
+        std::function<void(std::vector<uint8_t>&&)>&& onNotification,
+        std::function<void()>&& onExit);
+
     void SendNotification(std::vector<uint8_t>&& notificationData);
     void SendRequest(uint32_t request, std::vector<uint8_t>&& requestData);
     // request - same value as 
     void SendResponse(uint32_t request, std::vector<uint8_t>&& responseData);
     void StartListen();
+    void SendExit();
     ~Endpoint();
 private:
     void loop();
@@ -33,6 +36,7 @@ private:
     std::function<void(uint32_t, std::vector<uint8_t>&&)> _onRequest;
     std::function<void(uint32_t, std::vector<uint8_t>&&)> _onResponse;
     std::function<void(std::vector<uint8_t>&&)> _onNotification;
+    std::function<void()> _onExit;
     std::unique_ptr<std::thread> _loopThread;
 };
 

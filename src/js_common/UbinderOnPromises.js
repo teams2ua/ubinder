@@ -1,6 +1,6 @@
 // Promise based interface of ubinder (to hide request Id routines from client)
 module.exports.UbinderOnPromises = class UbinderOnPromises {
-    constructor(rawUbinder, onNotification, onRequest) {
+    constructor(rawUbinder, onNotification, onRequest, onExit) {
         this.pendingRequests = new Map();
         this.lib = rawUbinder;
         this.onNotification = onNotification;
@@ -8,7 +8,8 @@ module.exports.UbinderOnPromises = class UbinderOnPromises {
         this.lib.registerLib(
             (reqId, data)=>{this.OnRequest(reqId, data)},
             (reqId, data)=>{this.OnResponse(reqId, data)},
-            onNotification)
+            onNotification,
+            onExit);
 
         this.OnResponse = function(reqId, data) {
             var value = this.pendingRequests.get(reqId);
@@ -31,5 +32,7 @@ module.exports.UbinderOnPromises = class UbinderOnPromises {
         this.sendNotification = function (data) {
             this.lib.sendNotification(data);
         };
+
+        this.exit = this.lib.exit;
     }
 }
